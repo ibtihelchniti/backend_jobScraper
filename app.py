@@ -186,9 +186,6 @@ def get_scraping_history():
             conn.close()
 
 
-
-
-
 # Route pour exporter les données en CSV
 @app.route('/export-csv', methods=['GET'])
 def export_csv():
@@ -238,11 +235,7 @@ def export_csv():
     else:
         return jsonify({"error": "Aucune donnée à exporter"}), 404
 
-
-    
-
-    
-    
+  
 # Route pour mettre à jour les détails du site
 @app.route('/site-details/<int:site_id>', methods=['PUT'])
 def update_site_details(site_id):

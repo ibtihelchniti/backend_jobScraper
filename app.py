@@ -1,5 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory, send_file, Response
-import tempfile
+from flask import Flask, jsonify, request, send_file, redirect, render_template
 from flask_cors import CORS
 from scrapers.free_work_en import FreeWorkEn
 from scrapers.free_work_fr import FreeWorkFr
@@ -8,14 +7,18 @@ from utils.webdriver import init_webdriver
 from db.database import insert_scraping_history
 import mysql.connector
 from datetime import datetime
-import time
 import os
 import pandas as pd
-from scheduler import start_scraping
+import ldap3
+from flask_httpauth import HTTPBasicAuth
+from flask_ldap3_login import LDAP3LoginManager
+from ldap3 import Server, Connection, SIMPLE, SYNC, ALL
+
 
 
 app = Flask(__name__)
 CORS(app)
+
 
 # Fonction pour récupérer l'URL d'un site en fonction de son ID depuis la base de données
 def get_site_url(site_id):
@@ -99,9 +102,6 @@ def scrape_jobs_en():
         return jsonify({"success": False, "message": str(e)})
 
 
-
-
-
 # Route pour scraper les offres d'emploi depuis Free Work Fr
 @app.route('/scrape-fr', methods=['GET'])
 def scrape_jobs_fr():
@@ -123,6 +123,7 @@ def scrape_jobs_fr():
         insert_scraping_history(datetime.now(), "Failed", site_url if site_url else "URL non trouvée")
         return jsonify({"success": False, "message": str(e)})
     
+
 # Route pour scraper les offres d'emploi depuis Choose Your Boss
 @app.route('/scrape-ch', methods=['GET'])
 def scrape_jobs_ch():
@@ -145,7 +146,6 @@ def scrape_jobs_ch():
         return jsonify({"success": False, "message": str(e)})
     
     
-
 # Route pour récupérer l'historique de scraping
 @app.route('/scraping-history', methods=['GET'])
 def get_scraping_history():
@@ -270,6 +270,79 @@ def update_site_details(site_id):
             if cursor:
                 cursor.close()
             conn.close()
+
+
+
+
+# Configuration LDAP
+app.config['LDAP_HOST'] = 'ldap://localhost:389'
+app.config['LDAP_BASE_DN'] = 'ou=system'
+app.config['LDAP_BIND_USER_DN'] = 'uid=admin,ou=system'
+app.config['LDAP_BIND_USER_PASSWORD'] = 'secret'
+
+# Initialisation de LDAP manager
+ldap_manager = LDAP3LoginManager(app)
+ldap_manager.init_app(app)
+
+# Authentification HTTP basique
+basic_auth = HTTPBasicAuth()
+
+# Fonction de vérification des identifiants
+@basic_auth.verify_password
+def verify_password(username, password):
+    try:
+        # Création des objets de serveur et de connexion LDAP
+        server = Server(app.config['LDAP_HOST'], get_info=ALL)
+        connection = Connection(server, user=app.config['LDAP_BIND_USER_DN'], password=app.config['LDAP_BIND_USER_PASSWORD'], authentication=SIMPLE)
+
+        # Tentative de connexion LDAP et d'authentification
+        if connection.bind():
+            print("Connexion LDAP réussie")  
+
+            # Construction du filtre LDAP pour le nom d'utilisateur
+            search_filter = f'(cn={username})'
+            connection.search(app.config['LDAP_BASE_DN'], search_filter, attributes=['cn', 'userPassword'])
+
+            # Vérification de l'existence de l'entrée utilisateur
+            entries = connection.response
+            if entries and entries[0]['dn']:
+                user_dn = entries[0]['dn']
+                user_password = entries[0]['attributes']['userPassword'][0].decode('utf-8')  # Récupération du mot de passe encodé
+                # Vérification du mot de passe
+                if connection.rebind(user=user_dn, password=password):
+                    print("Mot de passe correct") 
+                    return True
+                else:
+                    print("Mot de passe incorrect") 
+                    return False
+            else:
+                print("Utilisateur introuvable dans LDAP")  
+                return False
+        else:
+            print("Échec de la connexion LDAP")  
+            return False
+    except Exception as e:
+        print(f"Erreur LDAP: {e}")  
+        return False
+
+
+
+# Route de connexion
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    print(f"Nom d'utilisateur: {username}")
+    print(f"Mot de passe: {password}")
+    
+    # Vérification du nom d'utilisateur et du mot de passe par rapport à LDAP
+    if verify_password(username, password):
+        print("Authentification réussie") 
+        return jsonify({'message': 'Authentification réussie'}), 200
+    else:
+        print("Échec de l'authentification")  
+        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
 
 if __name__ == '__main__':

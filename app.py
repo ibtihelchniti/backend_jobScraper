@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_file, redirect, render_template
+from flask import Flask, jsonify, request, send_file, redirect, url_for, session
 from flask_cors import CORS
 from scrapers.free_work_en import FreeWorkEn
 from scrapers.free_work_fr import FreeWorkFr
@@ -13,6 +13,8 @@ import ldap3
 from flask_httpauth import HTTPBasicAuth
 from flask_ldap3_login import LDAP3LoginManager
 from ldap3 import Server, Connection, SIMPLE, SYNC, ALL
+from flask_login import logout_user, current_user, LoginManager
+from flask import session
 
 
 
@@ -284,6 +286,13 @@ app.config['LDAP_BIND_USER_PASSWORD'] = 'secret'
 ldap_manager = LDAP3LoginManager(app)
 ldap_manager.init_app(app)
 
+# Initialisation du LoginManager Flask-Login
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+app.secret_key = 'c2f2eca4a9d05b6747edc063f90e49c7'
+
+
 # Authentification HTTP basique
 basic_auth = HTTPBasicAuth()
 
@@ -326,7 +335,6 @@ def verify_password(username, password):
         return False
 
 
-
 # Route de connexion
 @app.route('/login', methods=['POST'])
 def login():
@@ -338,11 +346,24 @@ def login():
     
     # Vérification du nom d'utilisateur et du mot de passe par rapport à LDAP
     if verify_password(username, password):
-        print("Authentification réussie") 
+        print("Authentification réussie")
+        session['username'] = username  # Stocker le nom d'utilisateur dans la session Flask
         return jsonify({'message': 'Authentification réussie'}), 200
     else:
-        print("Échec de l'authentification")  
-        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
+        print("Échec de l'authentification")
+        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 
+
+
+# Route de déconnexion
+@app.route('/logout', methods=['POST'])
+def logout():
+    # Vérifier si l'utilisateur est connecté avant de le déconnecter
+    if session.get('logged_in'):
+        # Supprimer uniquement la variable de session liée à la connexion
+        session.pop('logged_in', None)
+        return jsonify({'message': 'Déconnexion réussie'}), 200
+    else:
+        return jsonify({'message': 'Utilisateur non connecté'}), 401
 
 
 if __name__ == '__main__':

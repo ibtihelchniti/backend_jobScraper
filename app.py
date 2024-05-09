@@ -13,7 +13,7 @@ import ldap3
 from flask_httpauth import HTTPBasicAuth
 from flask_ldap3_login import LDAP3LoginManager
 from ldap3 import Server, Connection, SIMPLE, SYNC, ALL
-from flask_login import logout_user, current_user, LoginManager
+from flask_login import LoginManager
 from flask import session
 
 
@@ -364,6 +364,7 @@ def logout():
         return jsonify({'message': 'Déconnexion réussie'}), 200
     else:
         return jsonify({'message': 'Utilisateur non connecté'}), 401
+
 
 
 if __name__ == '__main__':

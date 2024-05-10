@@ -91,16 +91,18 @@ def scrape_jobs_en():
         driver = init_webdriver()
         site_id = 1  # ID de Free Work En
         site_url = get_site_url(site_id)  # Récupérer l'URL du site en fonction de son ID
+        
         if site_url:
             scraper = FreeWorkEn(driver, site_url) # Initialiser le scraper
             scraper.scrape_jobs() # Scraper les offres d'emploi
-            insert_scraping_history(datetime.now(), "Success", site_id) # Insérer l'historique de scraping avec l'ID de Free Work En
+            insert_scraping_history(datetime.now(), "Success", site_url) # Insérer l'historique de scraping 
             return jsonify({"success": True, "message": "Scraping terminé avec succès."})
         else:
             print("URL du site non trouvée dans la base de données.")
+            insert_scraping_history(datetime.now(), "Failed", "URL non trouvée")
             return jsonify({"success": False, "message": "URL du site non trouvée."})
     except Exception as e:
-        insert_scraping_history(datetime.now(), "Failed", site_id)
+        insert_scraping_history(datetime.now(), "Failed", site_url if site_url else "URL non trouvée")
         return jsonify({"success": False, "message": str(e)})
 
 

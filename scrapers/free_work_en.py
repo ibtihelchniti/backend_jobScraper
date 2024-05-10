@@ -83,73 +83,76 @@ class FreeWorkEn(BaseScraper):
     
     # Méthode pour scraper les détails de l'offre sur la page actuelle
     def _scrape_current_page(self):
-        job_offers = self.driver.find_elements(By.CSS_SELECTOR, 'div.px-4.pb-4.flex.flex-col.h-full')
-        for job in job_offers:
-            try:
-                location = self._get_element_text(job, 'span.block.flex-1')
-                self._click_view_job_button(job)  # Ouvre la page d'offre d'emploi 
-                
-                WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.html-renderer.prose-content'))) # Attendre que la page de détails de l'offre soit chargée
-                
-                # Scraper les détails de l'offre
-                job_details = self.driver.find_element(By.CSS_SELECTOR, 'div.w-full.mx-auto.px-4.md\:px-8.py-4.bg-dot.flex-1')
-                title = self._get_element_text(job_details, 'p.text-xl.font-semibold')
-                company = self._get_element_text(job_details, 'p.font-semibold')
-                job_type = self._get_element_text(job_details, 'div.tags div.truncate')
-                unique_id = hashlib.md5((title + company).encode('utf-8')).hexdigest()
-                
-                # Scraper la description de l'offre tout en conservant la mise en forme
-                description_elements = job_details.find_elements(By.CSS_SELECTOR, 'div.html-renderer.prose-content p')
-                description = '\n\n\n'.join([element.get_attribute('innerHTML') for element in description_elements])
+        while True:
+            job_offers = self.driver.find_elements(By.CSS_SELECTOR, 'div.px-4.pb-4.flex.flex-col.h-full')
+            for job in job_offers:
+                try:
+                    location = self._get_element_text(job, 'span.block.flex-1')
+                    self._click_view_job_button(job)  # Ouvre la page d'offre d'emploi 
+                    
+                    WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.html-renderer.prose-content'))) # Attendre que la page de détails de l'offre soit chargée
+                    
+                    # Scraper les détails de l'offre
+                    job_details = self.driver.find_element(By.CSS_SELECTOR, 'div.w-full.mx-auto.px-4.md\:px-8.py-4.bg-dot.flex-1')
+                    title = self._get_element_text(job_details, 'p.text-xl.font-semibold')
+                    company = self._get_element_text(job_details, 'p.font-semibold')
+                    job_type = self._get_element_text(job_details, 'div.tags div.truncate')
+                    unique_id = hashlib.md5((title + company).encode('utf-8')).hexdigest()
+                    
+                    # Scraper la description de l'offre tout en conservant la mise en forme
+                    description_elements = job_details.find_elements(By.CSS_SELECTOR, 'div.html-renderer.prose-content p')
+                    description = '\n\n\n'.join([element.get_attribute('innerHTML') for element in description_elements])
 
-                # Scraper l'URL du logo de l'entreprise si l'élément est présent
-                logo_elements = job_details.find_elements(By.CSS_SELECTOR, 'div.flex > a > img')
-                if logo_elements:
-                    logo_url = logo_elements[0].get_attribute('src')
-                else:
-                    logo_url = None
+                    # Scraper l'URL du logo de l'entreprise si l'élément est présent
+                    logo_elements = job_details.find_elements(By.CSS_SELECTOR, 'div.flex > a > img')
+                    if logo_elements:
+                        logo_url = logo_elements[0].get_attribute('src')
+                    else:
+                        logo_url = None
 
 
-                salary = None
-                experience = None
-                list_items = job_details.find_elements(By.CSS_SELECTOR, 'div.grid > div.flex.items-center.py-1')
+                    salary = None
+                    experience = None
+                    list_items = job_details.find_elements(By.CSS_SELECTOR, 'div.grid > div.flex.items-center.py-1')
 
-                for item in list_items:
-                    text = self._get_element_text(item, 'span.text-sm.line-clamp-2')  
-                    if '£' in text or '⁄day' in text:  
-                        salary = text
-                    elif 'years' in text or 'experience' in text: 
-                        experience = text
+                    for item in list_items:
+                        text = self._get_element_text(item, 'span.text-sm.line-clamp-2')  
+                        if '£' in text or '⁄day' in text:  
+                            salary = text
+                        elif 'years' in text or 'experience' in text: 
+                            experience = text
 
-                # Imprimer les détails de l'offre
-                print(f'Titre: {title}\nEntreprise: {company}\nLocalisation: {location}\nType: {job_type}\nLogo: {logo_url}\nSalaire: {salary}\nExpérience nécessaire: {experience}\nDescription: {description}\n{"-"*20}')
+                    # Imprimer les détails de l'offre
+                    print(f'Titre: {title}\nEntreprise: {company}\nLocalisation: {location}\nType: {job_type}\nLogo: {logo_url}\nSalaire: {salary}\nExpérience nécessaire: {experience}\nDescription: {description}\n{"-"*20}')
 
-                # Insérer les détails de l'offre dans la base de données
-                insert_job_offer_into_db(unique_id, title, company, location, job_type, salary, experience, description, logo_url)
+                    # Insérer les détails de l'offre dans la base de données
+                    insert_job_offer_into_db(unique_id, title, company, location, job_type, salary, experience, description, logo_url)
 
-                self.scraped_data.append({
-                        "unique_id": unique_id,
-                        "title": title,
-                        "company": company,
-                        "location": location,
-                        "job_type": job_type,
-                        "salary": salary,
-                        "experience": experience,
-                        "description": description,
-                        "logo_url": logo_url,
+                    self.scraped_data.append({
+                            "unique_id": unique_id,
+                            "title": title,
+                            "company": company,
+                            "location": location,
+                            "job_type": job_type,
+                            "salary": salary,
+                            "experience": experience,
+                            "description": description,
+                            "logo_url": logo_url,
 
-                    })
+                        })
 
-            except Exception as e:
-                print(f"Erreur lors du scraping de cette offre : {e}")
-                
-            finally:
-                # Fermer la fenêtre actuelle et revenir à la fenêtre précédente
-                if len(self.driver.window_handles) > 1:
-                    self.driver.close()
-                    self.driver.switch_to.window(self.driver.window_handles[0])
-                time.sleep(3)  # Attendre que la page se recharge
-
+                except Exception as e:
+                    print(f"Erreur lors du scraping de cette offre : {e}")
+                    
+                finally:
+                    # Fermer la fenêtre actuelle et revenir à la fenêtre précédente
+                    if len(self.driver.window_handles) > 1:
+                        self.driver.close()
+                        self.driver.switch_to.window(self.driver.window_handles[0])
+                    time.sleep(3)  # Attendre que la page se recharge
+            
+            if not self._go_to_next_page():
+                    break
 
     # Méthode pour récupérer le texte d'un élément
     def _get_element_text(self, parent_element, css_selector, default="-"):

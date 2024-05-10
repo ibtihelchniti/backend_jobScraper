@@ -7,22 +7,7 @@ from .base_scraper import BaseScraper
 from db.database import insert_job_offer_into_db
 import mysql.connector  
 
-# Connexion à la base de données
-conn = None
-try:
-    conn = mysql.connector.connect(
-        user='root',
-        password='Ibtihel456@Chniti',
-        host='localhost',
-        database='scraping_management',
-        port=3306
-    )
-    cursor = conn.cursor()
 
-except Exception as e:
-    print(f"Erreur lors de la connexion à la base de données : {e}")
-    exit()
-        
 
 # Définition de la classe qui hérite de base scraper
 class ChooseYourBoss(BaseScraper):
@@ -159,6 +144,14 @@ class ChooseYourBoss(BaseScraper):
                 break
 
     
+    # Méthode pour passer à la page suivante
+    def _get_element_text(self, parent_element, css_selector, default="-"):
+        try:
+            return parent_element.find_element(By.CSS_SELECTOR, css_selector).text.strip()
+        except:
+            return default
+
+    
     # Méthode pour récupérer le texte d'un élément
     def _go_to_next_page(self):
         try:
@@ -173,13 +166,6 @@ class ChooseYourBoss(BaseScraper):
             return False
 
 
-
-    # Méthode pour passer à la page suivante
-    def _get_element_text(self, parent_element, css_selector, default="-"):
-        try:
-            return parent_element.find_element(By.CSS_SELECTOR, css_selector).text.strip()
-        except:
-            return default
 
 
     

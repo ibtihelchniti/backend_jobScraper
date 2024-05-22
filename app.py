@@ -17,7 +17,6 @@ from flask_login import LoginManager
 from flask import session
 
 
-
 app = Flask(__name__)
 CORS(app)
 
@@ -26,10 +25,10 @@ CORS(app)
 def get_site_url(site_id):
     try:
         conn = mysql.connector.connect(
-            user='root',
-            password='Ibtihel456@Chniti',
-            host='localhost',
-            database='scraping_management',
+            user='u991920173_scraping_manag',
+            password='elzei@Scrap123',
+            host='mysql',
+            database='u991920173_elzeiscrap',
             port=3306
         )
         cursor = conn.cursor()
@@ -57,10 +56,10 @@ def get_site_url(site_id):
 def get_site_details(site_id):
     try:
         conn = mysql.connector.connect(
-            user='root',
-            password='Ibtihel456@Chniti',
-            host='localhost',
-            database='scraping_management',
+            user='u991920173_scraping_manag',
+            password='elzei@Scrap123',
+            host='mysql',
+            database='u991920173_elzeiscrap',
             port=3306
         )
         cursor = conn.cursor(dictionary=True)
@@ -155,10 +154,10 @@ def scrape_jobs_ch():
 def get_scraping_history():
     try:
         conn = mysql.connector.connect(
-            user='root',
-            password='Ibtihel456@Chniti',
-            host='localhost',
-            database='scraping_management',
+            user='u991920173_scraping_manag',
+            password='elzei@Scrap123',
+            host='mysql',
+            database='u991920173_elzeiscrap',
             port=3306
         )
         cursor = conn.cursor(dictionary=True)
@@ -253,10 +252,10 @@ def update_site_details(site_id):
 
         # Mettre à jour le nom et l'URL du site dans la base de données en utilisant l'ID du site
         conn = mysql.connector.connect(
-            user='root',
-            password='Ibtihel456@Chniti',
-            host='localhost',
-            database='scraping_management',
+            user='u991920173_scraping_manag',
+            password='elzei@Scrap123',
+            host='mysql',
+            database='u991920173_elzeiscrap',
             port=3306
         )
         cursor = conn.cursor()
@@ -370,6 +369,7 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) 
+    app.run()
+    
     
 

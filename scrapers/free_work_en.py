@@ -21,10 +21,10 @@ class FreeWorkEn(BaseScraper):
     def get_site_url(site_id):
         try:
             conn = mysql.connector.connect(
-                user='root',
-                password='Ibtihel456@Chniti',
-                host='localhost',
-                database='scraping_management',
+                user='u991920173_scraping_manag',
+                password='elzei@Scrap123',
+                host='mysql',
+                database='u991920173_elzeiscrap',
                 port=3306
             )
             cursor = conn.cursor()

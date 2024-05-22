@@ -278,7 +278,7 @@ def update_site_details(site_id):
 
 
 # Configuration LDAP
-app.config['LDAP_HOST'] = 'ldap://localhost:389'
+app.config['LDAP_HOST'] = 'ldap://elzei-uat.esy.es:389'
 app.config['LDAP_BASE_DN'] = 'ou=system'
 app.config['LDAP_BIND_USER_DN'] = 'uid=admin,ou=system'
 app.config['LDAP_BIND_USER_PASSWORD'] = 'secret'

@@ -4,12 +4,11 @@ def insert_job_offer_into_db(unique_id, title, company, location, job_type, sala
     conn = None
     try:
         conn = mysql.connector.connect(
-            user='u452481593_alawa',
-            password='eLegyBaJeh',
-            host='mysql',
-            database='u452481593_umemy',
-            port=3306
-
+            user='root',
+            password='root',
+            host='localhost',
+            database='local',
+            port=10005
         )
         cursor = conn.cursor()
 
@@ -18,9 +17,9 @@ def insert_job_offer_into_db(unique_id, title, company, location, job_type, sala
             print(f"L'offre d'emploi '{title}' existe déjà dans la base de données.")
             return 
         else: 
-            # Insérer l'offre d'emploi dans la table lkll_posts
+            # Insérer l'offre d'emploi dans la table wp_posts
             query = ("""
-                INSERT INTO lkll_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, 
+                INSERT INTO wp_posts (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, 
                 post_status, comment_status, ping_status, post_name, post_modified, post_modified_gmt, post_parent, 
                 guid, menu_order, post_type, comment_count, to_ping, pinged, post_content_filtered) 
                 VALUES (%s, NOW(), NOW(), %s, %s, '', 'publish', 'closed', 'closed', %s, NOW(), NOW(), 0, '', 0, 'job_listing', 0, '', '', '')
@@ -58,14 +57,14 @@ def insert_job_offer_into_db(unique_id, title, company, location, job_type, sala
 
 # Fonction pour récupérer l'ID de l'offre d'emploi par son ID unique
 def get_post_id_by_unique_id(cursor, unique_id):
-    cursor.execute("SELECT ID FROM lkll_posts WHERE post_name = %s", (unique_id,))
+    cursor.execute("SELECT ID FROM wp_posts WHERE post_name = %s", (unique_id,))
     row = cursor.fetchone()
     return row[0] if row else None
 
 
 # Fonction pour récupérer l'ID de la taxonomie des types d'emploi
 def get_term_taxonomy_id(cursor, job_type):
-    cursor.execute("SELECT term_taxonomy_id FROM lkll_term_taxonomy WHERE term_id IN (SELECT term_id FROM wp_terms WHERE name = %s)", (job_type,))
+    cursor.execute("SELECT term_taxonomy_id FROM wp_term_taxonomy WHERE term_id IN (SELECT term_id FROM wp_terms WHERE name = %s)", (job_type,))
     rows = cursor.fetchall()  
     term_taxonomy_id = None
     if rows:
@@ -76,7 +75,7 @@ def get_term_taxonomy_id(cursor, job_type):
 # Fonction pour ajouter l'offre d'emploi aux relations de termes
 def add_job_to_term_relationships(cursor, post_id, term_id):
     query = """
-        INSERT INTO lkll_term_relationships (object_id, term_taxonomy_id)
+        INSERT INTO wp_term_relationships (object_id, term_taxonomy_id)
         VALUES (%s, %s)
     """
     cursor.execute(query, (post_id, term_id))
@@ -85,7 +84,7 @@ def add_job_to_term_relationships(cursor, post_id, term_id):
 # Fonction pour mettre à jour les métadonnées de l'offre d'emploi   
 def update_postmeta(cursor, post_id, meta_key, meta_value):
     query = ("""
-        INSERT INTO lkll_postmeta (post_id, meta_key, meta_value) 
+        INSERT INTO wp_postmeta (post_id, meta_key, meta_value) 
         VALUES (%s, %s, %s)
         ON DUPLICATE KEY UPDATE
         meta_value = VALUES(meta_value)
@@ -98,10 +97,10 @@ def insert_scraping_history(scraping_date, scraping_status, site_url):
     conn = None
     try:
         conn = mysql.connector.connect(
-            user='u991920173_scraping_manag',
-            password='elzei@Scrap123',
-            host='mysql',
-            database='u991920173_elzeiscrap',
+            user='root',
+            password='Ibtihel456@Chniti',
+            host='localhost',
+            database='scraping_management',
             port=3306
         )
         cursor = conn.cursor()

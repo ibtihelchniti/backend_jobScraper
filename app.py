@@ -25,10 +25,10 @@ CORS(app)
 def get_site_url(site_id):
     try:
         conn = mysql.connector.connect(
-            user='u991920173_scraping_manag',
-            password='elzei@Scrap123',
-            host='mysql',
-            database='u991920173_elzeiscrap',
+            user='root',
+            password='Ibtihel456@Chniti',
+            host='localhost',
+            database='scraping_management',
             port=3306
         )
         cursor = conn.cursor()
@@ -56,10 +56,10 @@ def get_site_url(site_id):
 def get_site_details(site_id):
     try:
         conn = mysql.connector.connect(
-            user='u991920173_scraping_manag',
-            password='elzei@Scrap123',
-            host='mysql',
-            database='u991920173_elzeiscrap',
+            user='root',
+            password='Ibtihel456@Chniti',
+            host='localhost',
+            database='scraping_management',
             port=3306
         )
         cursor = conn.cursor(dictionary=True)
@@ -154,10 +154,10 @@ def scrape_jobs_ch():
 def get_scraping_history():
     try:
         conn = mysql.connector.connect(
-            user='u991920173_scraping_manag',
-            password='elzei@Scrap123',
-            host='mysql',
-            database='u991920173_elzeiscrap',
+            user='root',
+            password='Ibtihel456@Chniti',
+            host='localhost',
+            database='scraping_management',
             port=3306
         )
         cursor = conn.cursor(dictionary=True)
@@ -252,10 +252,10 @@ def update_site_details(site_id):
 
         # Mettre à jour le nom et l'URL du site dans la base de données en utilisant l'ID du site
         conn = mysql.connector.connect(
-            user='u991920173_scraping_manag',
-            password='elzei@Scrap123',
-            host='mysql',
-            database='u991920173_elzeiscrap',
+            user='root',
+            password='Ibtihel456@Chniti',
+            host='localhost',
+            database='scraping_management',
             port=3306
         )
         cursor = conn.cursor()
@@ -275,6 +275,8 @@ def update_site_details(site_id):
             conn.close()
 
 
+
+
 # Configuration LDAP
 app.config['LDAP_HOST'] = 'ldap://localhost:10389'
 app.config['LDAP_BASE_DN'] = 'ou=system'
@@ -290,6 +292,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 app.secret_key = 'c2f2eca4a9d05b6747edc063f90e49c7'
+
 
 # Authentification HTTP basique
 basic_auth = HTTPBasicAuth()
@@ -332,6 +335,7 @@ def verify_password(username, password):
         print(f"Erreur LDAP: {e}")  
         return False
 
+
 # Route de connexion
 @app.route('/login', methods=['POST'])
 def login():
@@ -348,19 +352,24 @@ def login():
         return jsonify({'message': 'Authentification réussie'}), 200
     else:
         print("Échec de l'authentification")
-        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
+        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 
+
 
 # Route de déconnexion
 @app.route('/logout', methods=['POST'])
 def logout():
-    if session.get('username'):
-        session.pop('username', None)
+    # Vérifier si l'utilisateur est connecté avant de le déconnecter
+    if session.get('logged_in'):
+        # Supprimer uniquement la variable de session liée à la connexion
+        session.pop('logged_in', None)
         return jsonify({'message': 'Déconnexion réussie'}), 200
     else:
         return jsonify({'message': 'Utilisateur non connecté'}), 401
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
 
+
+if __name__ == '__main__':
+    app.run()
+    
     
 

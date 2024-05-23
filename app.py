@@ -275,10 +275,8 @@ def update_site_details(site_id):
             conn.close()
 
 
-
-
 # Configuration LDAP
-app.config['LDAP_HOST'] = 'ldap://elzei-uat.esy.es:389'
+app.config['LDAP_HOST'] = 'ldap://localhost:10389'
 app.config['LDAP_BASE_DN'] = 'ou=system'
 app.config['LDAP_BIND_USER_DN'] = 'uid=admin,ou=system'
 app.config['LDAP_BIND_USER_PASSWORD'] = 'secret'
@@ -292,7 +290,6 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 app.secret_key = 'c2f2eca4a9d05b6747edc063f90e49c7'
-
 
 # Authentification HTTP basique
 basic_auth = HTTPBasicAuth()
@@ -335,7 +332,6 @@ def verify_password(username, password):
         print(f"Erreur LDAP: {e}")  
         return False
 
-
 # Route de connexion
 @app.route('/login', methods=['POST'])
 def login():
@@ -352,24 +348,19 @@ def login():
         return jsonify({'message': 'Authentification réussie'}), 200
     else:
         print("Échec de l'authentification")
-        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 
-
+        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
 # Route de déconnexion
 @app.route('/logout', methods=['POST'])
 def logout():
-    # Vérifier si l'utilisateur est connecté avant de le déconnecter
-    if session.get('logged_in'):
-        # Supprimer uniquement la variable de session liée à la connexion
-        session.pop('logged_in', None)
+    if session.get('username'):
+        session.pop('username', None)
         return jsonify({'message': 'Déconnexion réussie'}), 200
     else:
         return jsonify({'message': 'Utilisateur non connecté'}), 401
 
-
-
 if __name__ == '__main__':
-    app.run()
-    
+    app.run(host='0.0.0.0', port=5000)
+
     
 

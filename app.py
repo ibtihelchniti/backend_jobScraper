@@ -297,6 +297,7 @@ app.secret_key = 'c2f2eca4a9d05b6747edc063f90e49c7'
 # Authentification HTTP basique
 basic_auth = HTTPBasicAuth()
 
+
 # Fonction de vérification des identifiants
 @basic_auth.verify_password
 def verify_password(username, password):
@@ -352,7 +353,7 @@ def login():
         return jsonify({'message': 'Authentification réussie'}), 200
     else:
         print("Échec de l'authentification")
-        return jsonify({'message': 'Nom d\'utilisateur ou mot de passe incorrect'}), 
+        return jsonify({'error': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
 
 
 # Route de déconnexion

@@ -14,7 +14,8 @@ from flask_httpauth import HTTPBasicAuth
 from flask_ldap3_login import LDAP3LoginManager
 from ldap3 import Server, Connection, SIMPLE, SYNC, ALL
 from flask_login import LoginManager
-from flask import session
+import logging
+
 
 
 app = Flask(__name__)
@@ -275,17 +276,17 @@ def update_site_details(site_id):
             conn.close()
 
 
+# Configuration LDAP pour Apache Directory
+app.config['LDAP_APACHE_HOST'] = 'ldap://localhost:10389'
+app.config['LDAP_APACHE_BASE_DN'] = 'ou=system'
+app.config['LDAP_APACHE_BIND_USER_DN'] = 'uid=admin,ou=system'
+app.config['LDAP_APACHE_BIND_USER_PASSWORD'] = 'secret'
 
-
-# Configuration LDAP
-app.config['LDAP_HOST'] = 'ldap://localhost:10389'
-app.config['LDAP_BASE_DN'] = 'ou=system'
-app.config['LDAP_BIND_USER_DN'] = 'uid=admin,ou=system'
-app.config['LDAP_BIND_USER_PASSWORD'] = 'secret'
-
-# Initialisation de LDAP manager
-ldap_manager = LDAP3LoginManager(app)
-ldap_manager.init_app(app)
+# Configuration LDAP pour Microsoft Directory
+app.config['LDAP_MS_HOST'] = 'ldap://192.168.1.37:389'
+app.config['LDAP_MS_BASE_DN'] = 'DC=elzei,DC=fr'
+app.config['LDAP_MS_BIND_USER_DN'] = 'CN=Administrator,CN=Users,DC=elzei,DC=fr'
+app.config['LDAP_MS_BIND_USER_PASSWORD'] = 'Elzei456'
 
 # Initialisation du LoginManager Flask-Login
 login_manager = LoginManager(app)
@@ -293,49 +294,91 @@ login_manager.login_view = 'login'
 
 app.secret_key = 'c2f2eca4a9d05b6747edc063f90e49c7'
 
-
 # Authentification HTTP basique
 basic_auth = HTTPBasicAuth()
 
+def verify_ldap_credentials(ldap_host, bind_dn, bind_password, base_dn, username, password, ldap_type):
+    try:
+        server = Server(ldap_host, get_info=ALL)
+        connection = Connection(server, user=bind_dn, password=bind_password, authentication=SIMPLE)
+        
+        if connection.bind():
+            print(f"Connected to {ldap_type} LDAP server")
+            if ldap_type == 'apache':
+                search_filter = f'(cn={username})'
+            elif ldap_type == 'microsoft':
+                search_filter = f'(userPrincipalName={username})'
+            
+            connection.search(base_dn, search_filter, attributes=['cn'])
+            
+            entries = connection.response
+            if entries:
+                print(f"Search entries: {entries}")
+                user_dn = entries[0]['dn']
+                print(f"User DN found: {user_dn}")
+                
+                # Essayer de rebind avec le DN trouvé
+                if connection.rebind(user=user_dn, password=password):
+                    print(f"User {username} authenticated successfully on {ldap_type}")
+                    return True
+                else:
+                    print(f"Failed to rebind user {username} on {ldap_type} with DN")
+
+                # Essayer de rebind avec userPrincipalName
+                if ldap_type == 'microsoft':
+                    if connection.rebind(user=username, password=password):
+                        print(f"User {username} authenticated successfully on {ldap_type} with userPrincipalName")
+                        return True
+                    else:
+                        print(f"Failed to rebind user {username} on {ldap_type} with userPrincipalName")
+
+                # Essayer de rebind avec sAMAccountName
+                alt_search_filter = f'(sAMAccountName={username.split("@")[0]})'
+                connection.search(base_dn, alt_search_filter, attributes=['cn'])
+                alt_entries = connection.response
+                if alt_entries:
+                    alt_user_dn = alt_entries[0]['dn']
+                    print(f"Alt User DN found: {alt_user_dn}")
+                    if connection.rebind(user=alt_user_dn, password=password):
+                        print(f"User {username} authenticated successfully with alt DN on {ldap_type}")
+                        return True
+                    else:
+                        print(f"Failed to rebind user {username} with alt DN on {ldap_type}")
+            else:
+                print(f"No entries found for user {username} on {ldap_type}")
+        else:
+            print(f"Failed to bind to {ldap_type} LDAP server")
+        return False
+    except Exception as e:
+        print(f"Erreur LDAP: {e}")
+        return False
 
 # Fonction de vérification des identifiants
 @basic_auth.verify_password
 def verify_password(username, password):
-    try:
-        # Création des objets de serveur et de connexion LDAP
-        server = Server(app.config['LDAP_HOST'], get_info=ALL)
-        connection = Connection(server, user=app.config['LDAP_BIND_USER_DN'], password=app.config['LDAP_BIND_USER_PASSWORD'], authentication=SIMPLE)
+    if verify_ldap_credentials(
+        app.config['LDAP_APACHE_HOST'],
+        app.config['LDAP_APACHE_BIND_USER_DN'],
+        app.config['LDAP_APACHE_BIND_USER_PASSWORD'],
+        app.config['LDAP_APACHE_BASE_DN'],
+        username,
+        password,
+        ldap_type='apache'
+    ):
+        return True
 
-        # Tentative de connexion LDAP et d'authentification
-        if connection.bind():
-            print("Connexion LDAP réussie")  
+    if verify_ldap_credentials(
+        app.config['LDAP_MS_HOST'],
+        app.config['LDAP_MS_BIND_USER_DN'],
+        app.config['LDAP_MS_BIND_USER_PASSWORD'],
+        app.config['LDAP_MS_BASE_DN'],
+        username,
+        password,
+        ldap_type='microsoft'
+    ):
+        return True
 
-            # Construction du filtre LDAP pour le nom d'utilisateur
-            search_filter = f'(cn={username})'
-            connection.search(app.config['LDAP_BASE_DN'], search_filter, attributes=['cn', 'userPassword'])
-
-            # Vérification de l'existence de l'entrée utilisateur
-            entries = connection.response
-            if entries and entries[0]['dn']:
-                user_dn = entries[0]['dn']
-                user_password = entries[0]['attributes']['userPassword'][0].decode('utf-8')  # Récupération du mot de passe encodé
-                # Vérification du mot de passe
-                if connection.rebind(user=user_dn, password=password):
-                    print("Mot de passe correct") 
-                    return True
-                else:
-                    print("Mot de passe incorrect") 
-                    return False
-            else:
-                print("Utilisateur introuvable dans LDAP")  
-                return False
-        else:
-            print("Échec de la connexion LDAP")  
-            return False
-    except Exception as e:
-        print(f"Erreur LDAP: {e}")  
-        return False
-
+    return False
 
 # Route de connexion
 @app.route('/login', methods=['POST'])
@@ -343,34 +386,27 @@ def login():
     username = request.form.get('username')
     password = request.form.get('password')
     
-    print(f"Nom d'utilisateur: {username}")
-    print(f"Mot de passe: {password}")
-    
-    # Vérification du nom d'utilisateur et du mot de passe par rapport à LDAP
     if verify_password(username, password):
-        print("Authentification réussie")
-        session['username'] = username  # Stocker le nom d'utilisateur dans la session Flask
+        session['username'] = username
+        session['logged_in'] = True
         return jsonify({'message': 'Authentification réussie'}), 200
     else:
-        print("Échec de l'authentification")
         return jsonify({'error': 'Nom d\'utilisateur ou mot de passe incorrect'}), 401
-
 
 # Route de déconnexion
 @app.route('/logout', methods=['POST'])
 def logout():
-    # Vérifier si l'utilisateur est connecté avant de le déconnecter
     if session.get('logged_in'):
-        # Supprimer uniquement la variable de session liée à la connexion
         session.pop('logged_in', None)
+        session.pop('username', None)
         return jsonify({'message': 'Déconnexion réussie'}), 200
     else:
         return jsonify({'message': 'Utilisateur non connecté'}), 401
 
 
-
-if __name__ == '__main__':
-    app.run()
     
+if __name__ == "__main__":
+    app.run(debug=True)
+
     
 

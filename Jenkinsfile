@@ -1,50 +1,28 @@
 pipeline {
-    agent any  // Utilise n'importe quel agent disponible pour exécuter la pipeline.
-
-    environment {
-        VIRTUAL_ENV = 'venv'  // Définis une variable d'environnement pour l'environnement virtuel Python.
-    }
+    agent any
 
     stages {
-        stage('Checkout') {  // Première étape: Récupérer le code depuis GitHub.
+        stage('Setup') {
             steps {
-                git 'https://github.com/ibtihelchniti/backend_jobScraper.git'
-            }
-        }
-
-        stage('Setup') {  // Deuxième étape: Configurer l'environnement.
-            steps {
-                bat 'python -m venv %VIRTUAL_ENV%'  // Crée un environnement virtuel.
-                bat 'dir %VIRTUAL_ENV%'  // Vérifiez que le répertoire venv a été créé.
-                bat '%VIRTUAL_ENV%\\Scripts\\activate'  // Active l'environnement virtuel.
-                bat 'pip install -r requirements.txt'  // Installe les dépendances.
-                bat 'pip list'  // Vérifiez que les dépendances ont été installées.
-            }
-        }
-
-        stage('Run Tests') {  // Troisième étape: Exécuter les tests.
-            steps {
-                bat 'echo %VIRTUAL_ENV%\\Scripts\\activate'
-                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.'  // Exécute les tests avec couverture de code.
-            }
-            post {
-                always {
-                    junit '**/test-results.xml'
-                    archiveArtifacts artifacts: '**/coverage.xml', allowEmptyArchive: true
+                script {
+                    bat 'python -m venv venv'
+                    bat 'venv\\Scripts\\activate && pip install -r requirements.txt'
                 }
             }
         }
-    }
 
-    post {
-        always {
-            cleanWs()  // Nettoie l'espace de travail après chaque build.
+        stage('Run Tests') {
+            steps {
+                script {
+                    bat 'venv\\Scripts\\activate && pytest --cov=. --junitxml=report.xml'
+                }
+            }
         }
-        success {
-            echo 'Pipeline completed successfully!'  // Message de succès.
-        }
-        failure {
-            echo 'Pipeline failed, please check the logs.'  // Message d'échec.
+
+        stage('Publish Test Results') {
+            steps {
+                junit '**/report.xml'
+            }
         }
     }
 }

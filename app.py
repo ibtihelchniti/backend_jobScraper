@@ -353,6 +353,7 @@ def verify_ldap_credentials(ldap_host, bind_dn, bind_password, base_dn, username
         print(f"Erreur LDAP: {e}")
         return False
 
+
 # Fonction de vérification des identifiants
 @basic_auth.verify_password
 def verify_password(username, password):

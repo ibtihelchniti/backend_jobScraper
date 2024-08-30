@@ -15,13 +15,15 @@ pipeline {
         stage('Setup') {  // Deuxième étape: Configurer l'environnement.
             steps {
                 bat 'python -m venv %VIRTUAL_ENV%'  // Crée un environnement virtuel.
+                bat 'dir %VIRTUAL_ENV%'  // Vérifiez que le répertoire venv a été créé
                 bat '%VIRTUAL_ENV%\\Scripts\\activate && pip install -r requirements.txt'  // Active l'environnement virtuel et installe les dépendances.
+                bat 'pip list'  // Vérifiez que les dépendances ont été installées
             }
         }
 
         stage('Run Tests') {  // Troisième étape: Exécuter les tests.
             steps {
-                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.'  // Active l'environnement virtuel et exécute les tests avec couverture de code.
+                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.' || (exit 1)  // Active l'environnement virtuel et exécute les tests avec couverture de code. // Assurez-vous que les erreurs de pytest sont capturées
             }
             post {
                 always {
@@ -30,6 +32,7 @@ pipeline {
                 }
             }
         }
+
     }
 
     post {

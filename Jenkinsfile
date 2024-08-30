@@ -16,22 +16,16 @@ pipeline {
             steps {
                 bat 'python -m venv %VIRTUAL_ENV%'  // Crée un environnement virtuel.
                 bat 'dir %VIRTUAL_ENV%'  // Vérifiez que le répertoire venv a été créé.
-
-                // Séparez l'activation et l'installation des dépendances pour une meilleure lisibilité
-                bat '%VIRTUAL_ENV%\\Scripts\\activate && pip install -r requirements.txt' 
-                bat 'pip list'  // Vérifiez que les dépendances ont été installées
+                bat '%VIRTUAL_ENV%\\Scripts\\activate'  // Active l'environnement virtuel.
+                bat 'pip install -r requirements.txt'  // Installe les dépendances.
+                bat 'pip list'  // Vérifiez que les dépendances ont été installées.
             }
         }
 
         stage('Run Tests') {  // Troisième étape: Exécuter les tests.
             steps {
-                // Ajoutez un echo pour vous assurer que le chemin de l'environnement virtuel est correct
                 bat 'echo %VIRTUAL_ENV%\\Scripts\\activate'
-                
-                bat """
-                %VIRTUAL_ENV%\\Scripts\\activate
-                pytest --cov=.
-                """
+                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.'  // Exécute les tests avec couverture de code.
             }
             post {
                 always {

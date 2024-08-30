@@ -1,6 +1,6 @@
 pipeline {
     agent any  // Utilise n'importe quel agent disponible pour exécuter la pipeline.
-    
+
     environment {
         VIRTUAL_ENV = 'venv'  // Définis une variable d'environnement pour l'environnement virtuel Python.
     }
@@ -14,14 +14,14 @@ pipeline {
 
         stage('Setup') {  // Deuxième étape: Configurer l'environnement.
             steps {
-                sh 'python -m venv $VIRTUAL_ENV'  // Crée un environnement virtuel.
-                sh '. $VIRTUAL_ENV/bin/activate && pip install -r requirements.txt'  // Active l'environnement virtuel et installe les dépendances.
+                bat 'python -m venv %VIRTUAL_ENV%'  // Crée un environnement virtuel.
+                bat '%VIRTUAL_ENV%\\Scripts\\activate && pip install -r requirements.txt'  // Active l'environnement virtuel et installe les dépendances.
             }
         }
 
         stage('Run Tests') {  // Troisième étape: Exécuter les tests.
             steps {
-                sh '. $VIRTUAL_ENV/bin/activate && pytest --cov=.'  // Active l'environnement virtuel et exécute les tests avec couverture de code.
+                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.'  // Active l'environnement virtuel et exécute les tests avec couverture de code.
             }
             post {
                 always {
@@ -30,7 +30,6 @@ pipeline {
                 }
             }
         }
-       
     }
 
     post {

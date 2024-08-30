@@ -1,41 +1,50 @@
 pipeline {
-    agent any
+    agent any  // Utilise n'importe quel agent disponible pour exécuter la pipeline.
+
+    environment {
+        VIRTUAL_ENV = 'venv'  // Définis une variable d'environnement pour l'environnement virtuel Python.
+    }
 
     stages {
-        stage('Checkout') {
+        stage('Checkout') {  // Première étape: Récupérer le code depuis GitHub.
             steps {
-                checkout scm
+                git 'https://github.com/ibtihelchniti/backend_jobScraper.git'
             }
         }
 
-        stage('Setup') {
+        stage('Setup') {  // Deuxième étape: Configurer l'environnement.
             steps {
-                script {
-                    bat 'python -m venv venv'
-                    bat 'venv\\Scripts\\activate && pip install -r requirements.txt'
-                    bat 'venv\\Scripts\\activate && pip show pytest pytest-cov' // Vérifier les paquets installés
+                bat 'python -m venv %VIRTUAL_ENV%'  // Crée un environnement virtuel.
+                bat 'dir %VIRTUAL_ENV%'  // Vérifiez que le répertoire venv a été créé.
+                bat '%VIRTUAL_ENV%\\Scripts\\activate'  // Active l'environnement virtuel.
+                bat 'pip install -r requirements.txt'  // Installe les dépendances.
+                bat 'pip list'  // Vérifiez que les dépendances ont été installées.
+            }
+        }
+
+        stage('Run Tests') {  // Troisième étape: Exécuter les tests.
+            steps {
+                bat 'echo %VIRTUAL_ENV%\\Scripts\\activate'
+                bat '%VIRTUAL_ENV%\\Scripts\\activate && pytest --cov=.'  // Exécute les tests avec couverture de code.
+            }
+            post {
+                always {
+                    junit '**/test-results.xml'
+                    archiveArtifacts artifacts: '**/coverage.xml', allowEmptyArchive: true
                 }
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                script {
-                    bat 'venv\\Scripts\\activate && pytest --cov=. --junitxml=report.xml || exit 1'
-                }
-            }
-        }
-
-        stage('Publish Test Results') {
-            steps {
-                junit '**/report.xml'
             }
         }
     }
 
     post {
         always {
-            cleanWs()
+            cleanWs()  // Nettoie l'espace de travail après chaque build.
+        }
+        success {
+            echo 'Pipeline completed successfully!'  // Message de succès.
+        }
+        failure {
+            echo 'Pipeline failed, please check the logs.'  // Message d'échec.
         }
     }
 }

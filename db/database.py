@@ -41,7 +41,6 @@ def insert_job_offer_into_db(unique_id, title, company, location, job_type, sala
             if job_type_id is not None:
                 add_job_to_term_relationships(cursor, post_id, job_type_id)
 
-
         # Valider la transaction
         conn.commit() 
         print(f"Offre d'emploi '{title}' ajoutée dans la base de données avec succès.")

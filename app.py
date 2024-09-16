@@ -189,7 +189,6 @@ def get_scraping_history():
                 cursor.close()
             conn.close()
 
-
 # Route pour exporter les données en CSV
 @app.route('/export-csv', methods=['GET'])
 def export_csv():
@@ -198,17 +197,24 @@ def export_csv():
 
     # Sélectionnez le scraper en fonction de l'ID du site
     if site_id == '1':  # ID du site Free Work En
-        scraper = FreeWorkEn(init_webdriver())
-        csv_file = f'free_work_en_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'  # Ajouter un horodatage au nom du fichier
-    elif site_id == '2':  # ID du site Free Work Fr
-        scraper = FreeWorkFr(init_webdriver())
-        csv_file = f'free_work_fr_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'  # Ajouter un horodatage au nom du fichier
-    elif site_id == '3':  # ID du site Choose Your Boss
-        # Récupérer l'URL du site à partir de la fonction get_site_url
         site_url = get_site_url(site_id)
         if site_url:
-            scraper = ChooseYourBoss(init_webdriver(), site_url)  # Passer l'URL du site au scraper
-            csv_file = f'choose_your_boss_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'  # Ajouter un horodatage au nom du fichier
+            scraper = FreeWorkEn(init_webdriver(), site_url)  # Ajouter 'site_url' comme argument
+            csv_file = f'free_work_en_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        else:
+            return jsonify({"error": "URL du site non trouvée dans la base de données"}), 404
+    elif site_id == '2':  # ID du site Free Work Fr
+        site_url = get_site_url(site_id)
+        if site_url:
+            scraper = FreeWorkFr(init_webdriver(), site_url)  # Ajouter 'site_url' ici aussi
+            csv_file = f'free_work_fr_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+        else:
+            return jsonify({"error": "URL du site non trouvée dans la base de données"}), 404
+    elif site_id == '3':  # ID du site Choose Your Boss
+        site_url = get_site_url(site_id)
+        if site_url:
+            scraper = ChooseYourBoss(init_webdriver(), site_url)
+            csv_file = f'choose_your_boss_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
         else:
             return jsonify({"error": "URL du site non trouvée dans la base de données"}), 404
     else:
@@ -238,6 +244,7 @@ def export_csv():
 
     else:
         return jsonify({"error": "Aucune donnée à exporter"}), 404
+
 
   
 # Route pour mettre à jour les détails du site

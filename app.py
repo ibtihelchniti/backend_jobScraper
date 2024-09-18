@@ -16,11 +16,8 @@ from ldap3 import Server, Connection, SIMPLE, SYNC, ALL
 from flask_login import LoginManager
 import logging
 
-
-
 app = Flask(__name__)
 CORS(app)
-
 
 # Fonction pour récupérer l'URL d'un site en fonction de son ID depuis la base de données
 def get_site_url(site_id):
